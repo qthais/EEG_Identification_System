@@ -14,9 +14,9 @@ DATA_DIR = "files/"
 SUBJECT_PREFIX = "S"
 EDF_KEYWORD = "R01"
 SAMPLE_RATE = 160  # EEG Sampling Rate
-TIME_WINDOW = 4    # 2 seconds per segment
-STRIDE = 1          # 1-second stride
-CHANNELS = ['O1..', 'O2..', 'Cz..']  # 5 EEG Channels
+TIME_WINDOW = 3    # 2 seconds per segment
+STRIDE = 0.25          # 1-second stride
+CHANNELS = ['Oz..', 'Iz..']  # 5 EEG Channels
 N_CLASSES = 109
 
 # Function to Convert EEG Segment to Spectrogram
@@ -91,7 +91,7 @@ X, y = load_raw_eeg_segments(DATA_DIR, SUBJECT_PREFIX, EDF_KEYWORD, CHANNELS)
 print("Data shape before reshaping:", X.shape)  # (num_samples, num_channels, freq_bins, time_bins)
 
 # Train-test Split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Standardization: Fit on train, transform on both train & test
 scaler = StandardScaler()
