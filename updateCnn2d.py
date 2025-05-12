@@ -91,7 +91,11 @@ def build_cnn2d_model(input_shape, num_classes):
     inputs = Input(shape=input_shape)
 
     # CNN 2D layers
-    x = Conv2D(32, kernel_size=(3,3), activation='relu', padding='same')(inputs)
+    x = Conv2D(16, kernel_size=(3,3), activation='relu', padding='same')(inputs)
+    x = BatchNormalization()(x)
+    x = MaxPooling2D(pool_size=(2,2))(x)
+
+    x = Conv2D(32, kernel_size=(3,3), activation='relu', padding='same')(x)
     x = BatchNormalization()(x)
     x = MaxPooling2D(pool_size=(2,2))(x)
 
@@ -99,13 +103,9 @@ def build_cnn2d_model(input_shape, num_classes):
     x = BatchNormalization()(x)
     x = MaxPooling2D(pool_size=(2,2))(x)
 
-    x = Conv2D(128, kernel_size=(3,3), activation='relu', padding='same')(x)
-    x = BatchNormalization()(x)
-    x = MaxPooling2D(pool_size=(2,2))(x)
-
     x = Flatten()(x)
-    x = Dense(256, activation='relu')(x)
-    x = Dropout(0.7)(x)
+    x = Dense(128, activation='relu')(x)
+    x = Dropout(0.4)(x)
 
     outputs = Dense(num_classes, activation='softmax')(x)
 
