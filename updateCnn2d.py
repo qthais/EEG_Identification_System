@@ -78,8 +78,7 @@ def load_raw_eeg_segments(data_dir, subject_prefix, edf_keyword, channels,
                     seg_end = seg_start + seg_length
                     if seg_end > raw.n_times:
                         break
-                    segment = raw.get_data(start=seg_start, stop=seg_end).T #(320,5) 
-
+                    segment = raw.get_data(start=seg_start, stop=seg_end).T #(480,2) 
                     # Convert to spectrogram
                     spec = eeg_to_spectrogram(segment)  # Shape: (num_channels, freq_bins, time_bins) (5,33,9)
                     X.append(spec)
