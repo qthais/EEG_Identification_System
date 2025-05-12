@@ -1,1 +1,1 @@
-model.predict(spec_transform)
+    # x = Dropout(0.4)(x)

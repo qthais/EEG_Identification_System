@@ -120,7 +120,9 @@ if __name__ == "__main__":
     print("Data shape before reshaping:", X.shape)  # (num_samples, num_channels, freq_bins, time_bins)
 
     # Train-test Split
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Replace sequential splitting with stratified splitting
+    X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=0.4, stratify=y, random_state=42)
+    X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, stratify=y_temp, random_state=42)
 
     # Standardization: Fit on train, transform on both train & test
     scaler = StandardScaler()
@@ -133,10 +135,12 @@ if __name__ == "__main__":
     joblib.dump(scaler, 'scaler.pkl') 
     # Apply Standardization to Train & Test Sets
     X_train = scaler.transform(X_train_reshaped).reshape(num_train_samples, num_channels, freq_bins, time_bins)
+    X_val   = scaler.transform(X_val.reshape(-1, freq_bins * time_bins)).reshape(X_val.shape[0], num_channels, freq_bins, time_bins)
     X_test = scaler.transform(X_test.reshape(-1, freq_bins * time_bins)).reshape(X_test.shape[0], num_channels, freq_bins, time_bins)
 
     # Add channel dimension for Conv2D (Convert to shape: (samples, height, width, channels))
     X_train = np.transpose(X_train, (0, 2, 3, 1))  # Shape: (samples, freq_bins, time_bins, num_channels)
+    X_val   = np.transpose(X_val, (0, 2, 3, 1))
     X_test = np.transpose(X_test, (0, 2, 3, 1))
     #(5096,33,9,5)
     # Define input shape (num_channels, freq_bins, time_bins, 1)
@@ -154,7 +158,7 @@ if __name__ == "__main__":
     history = model.fit(X_train, y_train,
                         epochs=100,
                         batch_size=64,
-                        validation_data=(X_test, y_test),
+                        validation_data=(X_val, y_val),
                         callbacks=[early_stop, checkpoint, lr_scheduler])
 
     # Evaluate Model
