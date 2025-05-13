@@ -13,7 +13,7 @@ from sklearn.preprocessing import StandardScaler
 # Global Parameters
 DATA_DIR = "files/"
 SUBJECT_PREFIX = "S"
-EDF_KEYWORD = "R01"
+EDF_KEYWORD = "R13"
 SAMPLE_RATE = 160  # EEG Sampling Rate
 TIME_WINDOW = 3    # 3 seconds per segment
 STRIDE = 0.1          # 1-second stride
@@ -35,9 +35,12 @@ def eeg_to_spectrogram(eeg_segment, fs=160, nperseg=64, noverlap=32):
     return np.array(spectrograms)  # Shape: (num_channels, freq_bins, time_bins)
 
 # Function to Load and Process EEG Data
-def load_raw_eeg_segments(data_dir, subject_prefix, edf_keyword, channels,
-                          sample_rate=SAMPLE_RATE, time_window=TIME_WINDOW, stride=STRIDE):
-    X, y = [], []
+def load_eeg_split_by_time(data_dir, subject_prefix, edf_keyword, channels,
+                           sample_rate=SAMPLE_RATE, time_window=TIME_WINDOW, stride=STRIDE):
+    X_train, y_train = [], []
+    X_val, y_val = [], []
+    X_test, y_test = [], []
+
     subject_folders = sorted([s for s in os.listdir(data_dir) if s.startswith(subject_prefix) and len(s) == 4])
 
     for folder_name in subject_folders:
@@ -57,34 +60,50 @@ def load_raw_eeg_segments(data_dir, subject_prefix, edf_keyword, channels,
                 print(f"Error reading {edf_path}: {e}")
                 continue
 
-            raw.pick(channels)  
+            raw.pick(channels)
             raw.filter(0.5, 40, fir_design='firwin', verbose=False)
 
-            # Extract T0 event-related EEG segments
             t0_events = [ann for ann in raw.annotations if ann['description'] == "T0"]
             if not t0_events:
-                print(f"⚠️ No T0 events for {folder_name}")
                 continue
 
-            seg_length = int(time_window * sample_rate) #160*3=480 
-            stride_samples = int(stride * sample_rate)  #0.25*160=40 
+            seg_length = int(time_window * sample_rate)
+            stride_samples = int(stride * sample_rate)
 
             for ann in t0_events:
                 start_sample = int(ann['onset'] * sample_rate)
                 event_duration = int(ann['duration'] * sample_rate) if ann['duration'] > 0 else raw.n_times - start_sample
 
+                segments = []
                 for offset in range(0, event_duration - seg_length + 1, stride_samples):
                     seg_start = start_sample + offset
                     seg_end = seg_start + seg_length
                     if seg_end > raw.n_times:
                         break
-                    segment = raw.get_data(start=seg_start, stop=seg_end).T #(480,2) 
-                    # Convert to spectrogram
-                    spec = eeg_to_spectrogram(segment)  # Shape: (num_channels, freq_bins, time_bins) (5,33,9)
-                    X.append(spec)
-                    y.append(subject_id)
+                    segment = raw.get_data(start=seg_start, stop=seg_end).T
+                    spec = eeg_to_spectrogram(segment)
+                    segments.append(spec)
 
-    return np.array(X), np.array(y)
+                # Chia theo tỉ lệ thời gian
+                total = len(segments)
+                train_end = int(0.6 * total)
+                val_end = int(0.8 * total)
+
+                for i, spec in enumerate(segments):
+                    if i < train_end:
+                        X_train.append(spec)
+                        y_train.append(subject_id)
+                    elif i < val_end:
+                        X_val.append(spec)
+                        y_val.append(subject_id)
+                    else:
+                        X_test.append(spec)
+                        y_test.append(subject_id)
+
+    return (np.array(X_train), np.array(y_train),
+            np.array(X_val), np.array(y_val),
+            np.array(X_test), np.array(y_test))
+
 
 # Build CNN 2D Model
 def build_cnn2d_model(input_shape, num_classes):
@@ -94,17 +113,14 @@ def build_cnn2d_model(input_shape, num_classes):
     x = Conv2D(16, kernel_size=(3,3), activation='relu', padding='same')(inputs)
     x = BatchNormalization()(x)
     x = MaxPooling2D(pool_size=(2,2))(x)
-
     x = Conv2D(32, kernel_size=(3,3), activation='relu', padding='same')(x)
     x = BatchNormalization()(x)
     x = MaxPooling2D(pool_size=(2,2))(x)
-
     x = Conv2D(64, kernel_size=(3,3), activation='relu', padding='same')(x)
     x = BatchNormalization()(x)
     x = MaxPooling2D(pool_size=(2,2))(x)
-
     x = Flatten()(x)
-    x = Dense(128, activation='relu')(x)
+    x = Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01))(x)  # Thêm L2 regularization
     x = Dropout(0.4)(x)
 
     outputs = Dense(num_classes, activation='softmax')(x)
@@ -116,13 +132,8 @@ def build_cnn2d_model(input_shape, num_classes):
     return model
 if __name__ == "__main__":
     # Load EEG Data
-    X, y = load_raw_eeg_segments(DATA_DIR, SUBJECT_PREFIX, EDF_KEYWORD, CHANNELS)
-    print("Data shape before reshaping:", X.shape)  # (num_samples, num_channels, freq_bins, time_bins)
+    X_train, y_train, X_val, y_val, X_test, y_test = load_eeg_split_by_time(DATA_DIR, SUBJECT_PREFIX, EDF_KEYWORD, CHANNELS)
 
-    # Train-test Split
-# Replace sequential splitting with stratified splitting
-    X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=0.4, stratify=y, random_state=42)
-    X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, stratify=y_temp, random_state=42)
 
     # Standardization: Fit on train, transform on both train & test
     scaler = StandardScaler()
