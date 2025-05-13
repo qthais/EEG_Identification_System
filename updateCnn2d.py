@@ -13,11 +13,11 @@ from sklearn.preprocessing import StandardScaler
 # Global Parameters
 DATA_DIR = "files/"
 SUBJECT_PREFIX = "S"
-EDF_KEYWORD = "R13"
+EDF_KEYWORD = "R01"
 SAMPLE_RATE = 160  # EEG Sampling Rate
-TIME_WINDOW = 3    # 3 seconds per segment
+TIME_WINDOW = 3  # 3 seconds per segment
 STRIDE = 0.1          # 1-second stride
-CHANNELS = ['Oz..', 'Iz..']  # 5 EEG Channels
+CHANNELS = ['Oz..', 'Iz..','Cz..','P7..','O1..','O2..']  # 5 EEG Channels
 N_CLASSES = 109
 
 # Function to Convert EEG Segment to Spectrogram
@@ -121,7 +121,7 @@ def build_cnn2d_model(input_shape, num_classes):
     x = MaxPooling2D(pool_size=(2,2))(x)
     x = Flatten()(x)
     x = Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01))(x)  # Thêm L2 regularization
-    x = Dropout(0.4)(x)
+    x = Dropout(0.6)(x)
 
     outputs = Dense(num_classes, activation='softmax')(x)
 
