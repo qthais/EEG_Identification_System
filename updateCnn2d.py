@@ -15,7 +15,7 @@ DATA_DIR = "files/"
 SUBJECT_PREFIX = "S"
 EDF_KEYWORD = "R01"
 SAMPLE_RATE = 160  # EEG Sampling Rate
-TIME_WINDOW = 3  # 3 seconds per segment
+TIME_WINDOW = 4  # 3 seconds per segment
 STRIDE = 0.1          # 1-second stride
 CHANNELS = ['Oz..', 'Iz..','P7..']  # 5 EEG Channels
 N_CLASSES = 109
@@ -80,7 +80,7 @@ def load_eeg_split_by_time(data_dir, subject_prefix, edf_keyword, channels,
                     seg_end = seg_start + seg_length
                     if seg_end > raw.n_times:
                         break
-                    segment = raw.get_data(start=seg_start, stop=seg_end).T
+                    segment = raw.get_data(start=seg_start, stop=seg_end).T #(480,3)
                     spec = eeg_to_spectrogram(segment)
                     segments.append(spec)
 
