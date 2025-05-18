@@ -4,7 +4,7 @@ import joblib
 import mne
 import tensorflow as tf
 import scipy.signal
-from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, BatchNormalization, Dense, Dropout, Flatten
+from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, BatchNormalization, Dense, Dropout, Flatten ,GlobalAveragePooling2D
 from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from sklearn.model_selection import train_test_split
@@ -15,7 +15,7 @@ DATA_DIR = "files/"
 SUBJECT_PREFIX = "S"
 EDF_KEYWORD = "R01"
 SAMPLE_RATE = 160  # EEG Sampling Rate
-TIME_WINDOW = 3  # 3 seconds per segment
+TIME_WINDOW = 5  # 3 seconds per segment
 STRIDE = 0.5          # 1-second stride
 CHANNELS = ['Oz..', 'Iz..','P7..']  # 5 EEG Channels
 N_CLASSES = 109
@@ -120,8 +120,8 @@ def build_cnn2d_model(input_shape, num_classes):
     x = BatchNormalization()(x)
     x = MaxPooling2D(pool_size=(2,2))(x)
     x = Flatten()(x)
-    x = Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.05))(x)  # Thêm L2 regularization
-
+    x = Dense(64, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.05))(x)  # Thêm L2 regularization
+    # x= Dropout(0.4)(x)
     outputs = Dense(num_classes, activation='softmax')(x)
 
     model = Model(inputs, outputs)
