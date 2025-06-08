@@ -1,12 +1,12 @@
 import mne
 import matplotlib.pyplot as plt
 from scipy.signal import spectrogram
-import cv2
 import numpy as np
 # Path to a sample EDF file (adjust this path accordingly)
-edf_file = "files/S001/S001R01.edf"
+edf_file = "app/data/raw/files/S001/S001R01.edf"
 
 # Load EDF using MNE
+print("edf file:",edf_file)
 raw = mne.io.read_raw_edf(edf_file, preload=True)
 print("Channel Labels:", raw.info)
 
