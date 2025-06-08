@@ -28,7 +28,9 @@ def normalize_segment(segment):
 
 def load_raw_eeg_segments(data_dir, subject_prefix, edf_keyword, channels,
                           sample_rate=SAMPLE_RATE, time_window=TIME_WINDOW, stride=STRIDE):
-    X, y = [], []
+    X_train, y_train = [], []
+    X_val, y_val = [], []
+    X_test, y_test = [], []
     subject_folders = sorted([s for s in os.listdir(data_dir)
                               if s.startswith(subject_prefix) and len(s)==4])
     for folder_name in subject_folders:
@@ -62,7 +64,7 @@ def load_raw_eeg_segments(data_dir, subject_prefix, edf_keyword, channels,
             for ann in t0_events:
                 start_sample = int(ann['onset'] * sample_rate) #160*0
                 event_duration = int(ann['duration'] * sample_rate) if ann['duration'] > 0 else raw.n_times - start_sample #160*60=9600s
-                
+                segments = []
                 for offset in range(0, event_duration - seg_length + 1, stride_samples): #[0-320,160-480,320-640,...]
                     seg_start = start_sample + offset
                     seg_end = seg_start + seg_length
@@ -70,17 +72,29 @@ def load_raw_eeg_segments(data_dir, subject_prefix, edf_keyword, channels,
                         break
                     segment = raw.get_data(start=seg_start, stop=seg_end)  # (channels, time samples) (5,320)
                     segment = segment.T  # (time samples, channels) (320,5)
-                    X.append(segment)
-                    y.append(subject_id)
-    return np.array(X), np.array(y)
+                    segments.append(segment)
+                total = len(segments)
+                train_end = int(0.6 * total)
+                val_end = int(0.8 * total)
+
+                for i, spec in enumerate(segments):
+                    if i < train_end:
+                        X_train.append(spec)
+                        y_train.append(subject_id)
+                    elif i < val_end:
+                        X_val.append(spec)
+                        y_val.append(subject_id)
+                    else:
+                        X_test.append(spec)
+                        y_test.append(subject_id)
+    return (np.array(X_train), np.array(y_train),
+            np.array(X_val), np.array(y_val),
+            np.array(X_test), np.array(y_test))
 
 # Load data
-X, y = load_raw_eeg_segments(DATA_DIR, SUBJECT_PREFIX, EDF_KEYWORD, CHANNELS)
-print("Data shape:", X.shape)  # Expected: (num_segments, 320, 5)
-print("Class distribution:", collections.Counter(y))
 
 # Chia tập train và test
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, y_train, X_val, y_val, X_test, y_test = load_raw_eeg_segments(DATA_DIR, SUBJECT_PREFIX, EDF_KEYWORD, CHANNELS)
 
 # Reshape lại thành dạng 2D để fit vào StandardScaler
 num_train_samples, num_timesteps, num_channels = X_train.shape  # (num_samples, 320, 5)
@@ -128,7 +142,7 @@ lr_scheduler = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, ver
 history = model.fit(X_train, y_train,
                     epochs=40,
                     batch_size=64,
-                    validation_data=(X_test, y_test),
+                    validation_data=(X_val, y_val),
                     callbacks=[early_stop, checkpoint, lr_scheduler])
 
 test_loss, test_acc = model.evaluate(X_test, y_test, verbose=2)

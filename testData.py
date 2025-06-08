@@ -11,7 +11,7 @@ raw = mne.io.read_raw_edf(edf_file, preload=True)
 print("Channel Labels:", raw.info)
 
 # Pick a channel (using the new API: inst.pick(...))
-raw.pick(["Oz.."])
+raw.pick(["Iz.."])
 
 # Apply a bandpass filter (0.5-40 Hz)
 raw.filter(0.5, 40, fir_design='firwin')
@@ -28,7 +28,7 @@ plt.ylabel("Amplitude")
 plt.show()
 
 # Compute spectrogram for the first 2-second segment
-segment = data[:, :int(2*raw.info["sfreq"])]# take the first 2 in 10s
+segment = data[:, :int(3*raw.info["sfreq"])]# take the first 2 in 10s
 
 f, t, Sxx = spectrogram(segment[0], fs=raw.info["sfreq"], nperseg=64, noverlap=32)
 #(33,9) in Sxx, 33 corresponding to f shape in spectrogram , 9 corresponding to times from 0 to 1.8, while in Sxx[i,j] display the data segment for the time t[j] and the freq f[i]
@@ -36,7 +36,7 @@ Sxx_log = np.log1p(Sxx)
 
 plt.figure(figsize=(8, 4))
 plt.pcolormesh(t, f, Sxx_log, shading='gouraud')# can change Sxx_log to Sxx
-plt.title("Spectrogram of 2-second EEG Segment (Fp1.)")
+plt.title("Spectrogram of 3-second EEG Segment (Iz.)")
 plt.xlabel("Time (s)")
 plt.ylabel("Frequency (Hz)")
 plt.colorbar(label='Log-scaled Power')

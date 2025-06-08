@@ -17,7 +17,7 @@ EDF_KEYWORD = "R01"
 SAMPLE_RATE = 160  # EEG Sampling Rate
 TIME_WINDOW = 3  # 3 seconds per segment
 STRIDE = 0.3          # 1-second stride
-CHANNELS = ['Oz..', 'Iz..','P7..']  # 5 EEG Channels
+CHANNELS = ['Oz..', 'Iz..','P7..','Cz..']  # 5 EEG Channels
 N_CLASSES = 109
 
 # Function to Convert EEG Segment to Spectrogram
@@ -28,7 +28,7 @@ def eeg_to_spectrogram(eeg_segment, fs=160, nperseg=64, noverlap=32):
     """
     spectrograms = []
     for ch in range(eeg_segment.shape[1]):  # Loop through each EEG channel
-        f, t, Sxx = scipy.signal.spectrogram(eeg_segment[:, ch], fs=fs, nperseg=nperseg, noverlap=noverlap) #(320,5)=>(320,ch)
+        f, t, Sxx = scipy.signal.spectrogram(eeg_segment[:, ch], fs=fs, nperseg=nperseg, noverlap=noverlap) #(480,3)=>(480,ch)
         Sxx = np.log1p(Sxx)  # Apply log transform to make values more normally distributed
         spectrograms.append(Sxx)
 
@@ -132,11 +132,8 @@ def build_cnn2d_model(input_shape, num_classes):
 if __name__ == "__main__":
     # Load EEG Data
     X_train, y_train, X_val, y_val, X_test, y_test = load_eeg_split_by_time(DATA_DIR, SUBJECT_PREFIX, EDF_KEYWORD, CHANNELS)
-
-
     # Standardization: Fit on train, transform on both train & test
     scaler = StandardScaler()
-
     # Reshape data for standardization (Flatten the frequency bins & time bins)
     num_train_samples, num_channels, freq_bins, time_bins = X_train.shape #(5096,5,33,9)
     print('f and t',freq_bins,time_bins)
@@ -166,7 +163,7 @@ if __name__ == "__main__":
 
     # Train Model
     history = model.fit(X_train, y_train,
-                        epochs=100,
+                        epochs=200,
                         batch_size=64,
                         validation_data=(X_val, y_val),
                         callbacks=[early_stop, checkpoint, lr_scheduler])
