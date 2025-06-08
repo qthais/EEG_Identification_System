@@ -4,14 +4,15 @@ import joblib
 import mne
 import tensorflow as tf
 import scipy.signal
-from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, BatchNormalization, Dense, Dropout, Flatten ,GlobalAveragePooling2D
-from tensorflow.keras.models import Model
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
+from keras.layers import Input, Conv2D, MaxPooling2D, BatchNormalization, Dense, Dropout, Flatten
+from keras.models import Model
+from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
+from keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 # Global Parameters
-DATA_DIR = "files/"
+DATA_DIR = "app/data/raw/files/"
 SUBJECT_PREFIX = "S"
 EDF_KEYWORD = "R01"
 SAMPLE_RATE = 160  # EEG Sampling Rate
@@ -125,7 +126,7 @@ def build_cnn2d_model(input_shape, num_classes):
     outputs = Dense(num_classes, activation='softmax')(x)
 
     model = Model(inputs, outputs)
-    model.compile(optimizer='adam',
+    model.compile(optimizer=Adam(learning_rate=0.0005),
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
     return model
@@ -158,7 +159,7 @@ if __name__ == "__main__":
 
     # Training Callbacks
     early_stop = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
-    checkpoint = ModelCheckpoint("best_cnn2d_model.keras", monitor='val_loss', save_best_only=True)
+    checkpoint = ModelCheckpoint("app/models/best_cnn2d_model.keras", monitor='val_loss', save_best_only=True)
     lr_scheduler = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, verbose=1)
 
     # Train Model

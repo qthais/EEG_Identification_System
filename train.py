@@ -12,7 +12,7 @@ import cv2
 import collections
 
 # Parameters
-DATA_DIR = "files/"
+DATA_DIR = ""
 SAMPLE_RATE = 160
 TIME_WINDOW = 2
 STRIDE = 1
