@@ -140,7 +140,7 @@ if __name__ == "__main__":
     print('f and t',freq_bins,time_bins)
     X_train_reshaped = X_train.reshape(-1, freq_bins * time_bins)  # Flatten spectrograms (25480,297)
     scaler.fit(X_train_reshaped)  # Fit only on train data
-    joblib.dump(scaler, 'scaler.pkl') 
+    joblib.dump(scaler, 'app/models/scaler.pkl') 
     # Apply Standardization to Train & Test Sets
     X_train = scaler.transform(X_train_reshaped).reshape(num_train_samples, num_channels, freq_bins, time_bins)
     X_val   = scaler.transform(X_val.reshape(-1, freq_bins * time_bins)).reshape(X_val.shape[0], num_channels, freq_bins, time_bins)
