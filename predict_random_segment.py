@@ -3,24 +3,22 @@ import tensorflow as tf
 import numpy as np
 import joblib
 from updateCnn2d import eeg_to_spectrogram
-model = tf.keras.models.load_model('best_cnn2d_model.keras')
-edf_file = "files/S109/S109R01.edf"
-CHANNELS = ['Oz..', 'Iz..','P7..'] 
+model = tf.keras.models.load_model('app/models/best_cnn2d_model.keras')
+edf_file = "app/data/raw/files/S109/S109R01.edf"
+CHANNELS = ['Oz..', 'Iz..','Cz..'] 
 SAMPLE_RATE = 160  # EEG Sampling Rate
 TIME_WINDOW = 3    # 3 seconds per segment
 STRIDE = 0.25    
 raw=mne.io.read_raw_edf(edf_file, preload=True, verbose=False)
 raw.pick(CHANNELS)  
-raw.filter(0.5, 40, fir_design='firwin', verbose=False)
 samples_per_segment=SAMPLE_RATE*TIME_WINDOW
-max_start = raw.n_times - samples_per_segment  # Make sure segment fits
-start_sample = np.random.randint(0, max_start)
-end_sample = start_sample + samples_per_segment
+start_sample = raw.n_times - samples_per_segment
+end_sample = raw.n_times
 random_segment=raw.get_data(start=start_sample, stop=end_sample).T
 print("Random segment shape:", random_segment.shape)
 spec = eeg_to_spectrogram(random_segment)
 num_channels, freq_bins, time_bins= spec.shape
-scaler = joblib.load('scaler.pkl')
+scaler = joblib.load('app/models/scaler.pkl')
 spec_flattened = spec.reshape(-1, freq_bins * time_bins)  # Shape: (channels, freq_bins * time_bins)
 spec_transform = scaler.transform(spec_flattened).reshape(num_channels, freq_bins, time_bins)
 spec_transform_reshaped = spec_transform.transpose(1, 2, 0)  # Shape: (freq_bins, time_bins, channels)
