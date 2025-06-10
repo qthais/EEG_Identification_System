@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from scipy.signal import spectrogram
 import numpy as np
 # Path to a sample EDF file (adjust this path accordingly)
-edf_file = "app/data/raw/files/S001/S001R01.edf"
+edf_file = "app/data/raw/files/S002/S002R01.edf"
 
 # Load EDF using MNE
 print("edf file:",edf_file)
@@ -11,13 +11,12 @@ raw = mne.io.read_raw_edf(edf_file, preload=True)
 print("Channel Labels:", raw.info)
 
 # Pick a channel (using the new API: inst.pick(...))
-raw.pick(["Iz.."])
+raw.pick(["P7.."])
 
-# Apply a bandpass filter (0.5-40 Hz)
-raw.filter(0.5, 40, fir_design='firwin')
+
 
 # Get data from the first 10 seconds for visualization
-data, times = raw[:, :int(10 * raw.info["sfreq"])]
+data, times = raw[:, int(40 * raw.info["sfreq"]):int(50 * raw.info["sfreq"])]
 #times= time marks for each sample from 0-10s
 
 plt.figure(figsize=(10, 4))

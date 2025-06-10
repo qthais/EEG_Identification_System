@@ -30,7 +30,6 @@ def load_eeg_split_by_time(data_dir=DATA_DIR, channels=CHANNELS,
             continue
 
         raw.pick(channels)
-        raw.filter(0.5, 40, fir_design='firwin', verbose=False)
 
         t0_events = [ann for ann in raw.annotations if ann['description'] == "T0"]
         if not t0_events:

@@ -8,7 +8,6 @@ from keras.layers import Input, Conv2D, MaxPooling2D, BatchNormalization, Dense,
 from keras.models import Model
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from keras.optimizers import Adam
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 # Global Parameters
@@ -18,7 +17,7 @@ EDF_KEYWORD = "R01"
 SAMPLE_RATE = 160  # EEG Sampling Rate
 TIME_WINDOW = 3  # 3 seconds per segment
 STRIDE = 0.3          # 1-second stride
-CHANNELS = ['Oz..', 'Iz..','P7..','Cz..']  # 5 EEG Channels
+CHANNELS = ['Oz..', 'Iz..','Cz..']  # 5 EEG Channels
 N_CLASSES = 109
 
 # Function to Convert EEG Segment to Spectrogram
@@ -62,8 +61,6 @@ def load_eeg_split_by_time(data_dir, subject_prefix, edf_keyword, channels,
                 continue
 
             raw.pick(channels)
-            raw.filter(0.5, 40, fir_design='firwin', verbose=False)
-
             t0_events = [ann for ann in raw.annotations if ann['description'] == "T0"]
             if not t0_events:
                 continue
@@ -81,7 +78,7 @@ def load_eeg_split_by_time(data_dir, subject_prefix, edf_keyword, channels,
                     seg_end = seg_start + seg_length
                     if seg_end > raw.n_times:
                         break
-                    segment = raw.get_data(start=seg_start, stop=seg_end).T
+                    segment = raw.get_data(start=seg_start, stop=seg_end).T #channels later
                     spec = eeg_to_spectrogram(segment)
                     segments.append(spec)
 
