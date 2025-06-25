@@ -4,13 +4,13 @@ import numpy as np
 import joblib
 import tensorflow as tf
 from app.services.eeg_processing import eeg_to_spectrogram
-from app.services.config import CHANNELS, SAMPLE_RATE, TIME_WINDOW
+from app.services.config import CHANNELS, SAMPLE_RATE, TIME_WINDOW,MODEL_DIR
 
 # Load model once
-model = tf.keras.models.load_model('models/best_cnn2d_model.keras')
+model = tf.keras.models.load_model(MODEL_DIR/'best_cnn2d_model.keras')
 
 # Load scaler once
-scaler = joblib.load('models/scaler.pkl')
+scaler = joblib.load(MODEL_DIR/'scaler.pkl')
 
 def preprocess_segment(segment):
     num_channels, freq_bins, time_bins = segment.shape
@@ -23,7 +23,6 @@ def preprocess_segment(segment):
 def predict_random_segment(edf_file_path):
     raw = mne.io.read_raw_edf(edf_file_path, preload=True, verbose=False)
     raw.pick(CHANNELS)
-    raw.filter(0.5, 40, fir_design='firwin', verbose=False)
 
     samples_per_segment = SAMPLE_RATE * TIME_WINDOW
     max_start = raw.n_times - samples_per_segment
@@ -35,9 +34,11 @@ def predict_random_segment(edf_file_path):
     input_tensor = preprocess_segment(spec)
 
     prediction = model.predict(input_tensor)
+    confidence = float(max(prediction[0]))
     predicted_class = np.argmax(prediction, axis=-1)[0]
 
     return {
+        "confidence": confidence,
         "predicted_class": int(predicted_class),
         "raw_prediction": prediction.tolist(),
         "segment_shape": random_segment.shape

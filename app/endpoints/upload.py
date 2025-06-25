@@ -12,6 +12,7 @@ from keras.models import load_model
 from app.services.eeg_processing import eeg_to_spectrogram
 import tempfile
 
+from app.services.predict_service import predict_random_segment
 from app.services.retrain import retrainModel
 router= APIRouter()
 
@@ -35,7 +36,7 @@ async def register_eeg(file: UploadFile, subject_id: int = Form(...)):
         # Call retrain
         print("🔁 Starting retraining...")
         test_accuracy = retrainModel()
-        print(f"✅ Retraining complete. Test Accuracy: {test_accuracy}")
+
 
         # Return response
         return JSONResponse({
@@ -52,15 +53,30 @@ async def register_eeg(file: UploadFile, subject_id: int = Form(...)):
         }, status_code=500)
 @router.post("/login_eeg")
 async def login_eeg(file: UploadFile):
-    print(f"LOGIN EEG: received file {file.filename}")
-    # For now, return fake prediction
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".edf") as tmp_file:
-        tmp_file.write(await file.read())
-        tmp_path = tmp_file.name
-    print(tmp_path)
-    # Now read with MNE
-    raw = mne.io.read_raw_edf(tmp_path, preload=True, verbose=False)
-    os.remove(tmp_path)
-    print(raw.info)
+    try:
+        print(f"LOGIN EEG: received file {file.filename}")
 
-    return {"message": "EEG file processed successfully"}
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".edf") as tmp_file:
+            tmp_file.write(await file.read())
+            tmp_path = tmp_file.name
+
+        print(f"📥 Temp file saved: {tmp_path}")
+
+        result = predict_random_segment(tmp_path)
+
+        os.remove(tmp_path)
+
+        return {
+            "message": "Prediction successful",
+            "confidence": result["confidence"],
+            "predicted_class": result["predicted_class"],
+            "raw_prediction": result["raw_prediction"],
+            "segment_shape": result["segment_shape"]
+        }
+
+    except Exception as e:
+        print("❌ Error in /login_eeg:", e)
+        return JSONResponse({
+            "message": "Prediction failed",
+            "error": str(e)
+        }, status_code=500)

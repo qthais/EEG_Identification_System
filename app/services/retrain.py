@@ -10,8 +10,8 @@ from app.services.config import CHANNELS, DATA_DIR, MODEL_DIR, UPLOAD_DIR
 from app.services.data_loader import load_eeg_split_by_time
 from app.services.model import build_cnn2d_model
 def retrainModel():
-    X_train, y_train, X_val, y_val, X_test, y_test = load_eeg_split_by_time(UPLOAD_DIR, CHANNELS)
-    n_classes = len(np.unique(np.concatenate([y_train, y_val, y_test])))
+    X_train, y_train, X_val, y_val = load_eeg_split_by_time(UPLOAD_DIR, CHANNELS)
+    n_classes = len(np.unique(np.concatenate([y_train, y_val])))
     # Standardization: Fit on train, transform on both train & test
     scaler = StandardScaler()
     # Reshape data for standardization (Flatten the frequency bins & time bins)
@@ -23,12 +23,10 @@ def retrainModel():
     # Apply Standardization to Train & Test Sets
     X_train = scaler.transform(X_train_reshaped).reshape(num_train_samples, num_channels, freq_bins, time_bins)
     X_val   = scaler.transform(X_val.reshape(-1, freq_bins * time_bins)).reshape(X_val.shape[0], num_channels, freq_bins, time_bins)
-    X_test = scaler.transform(X_test.reshape(-1, freq_bins * time_bins)).reshape(X_test.shape[0], num_channels, freq_bins, time_bins)
 
     # Add channel dimension for Conv2D (Convert to shape: (samples, height, width, channels))
     X_train = np.transpose(X_train, (0, 2, 3, 1))  # Shape: (samples, freq_bins, time_bins, num_channels)
     X_val   = np.transpose(X_val, (0, 2, 3, 1))
-    X_test = np.transpose(X_test, (0, 2, 3, 1))
     #(5096,33,9,5)
     # Define input shape (num_channels, freq_bins, time_bins, 1)
 
@@ -49,7 +47,7 @@ def retrainModel():
                         validation_data=(X_val, y_val),
                         callbacks=[early_stop, checkpoint, lr_scheduler])
 
-    test_loss, test_acc = model.evaluate(X_test, y_test, verbose=2)
+    test_loss, test_acc = model.evaluate(X_val,y_val, verbose=2)
     print(f"=== Retraining complete. Final Test Accuracy: {test_acc} ===")
 
     return float(test_acc)

@@ -4,7 +4,7 @@ import numpy as np
 import joblib
 from updateCnn2d import eeg_to_spectrogram
 model = tf.keras.models.load_model('app/models/best_cnn2d_model.keras')
-edf_file = "app/data/raw/files/S109/S109R01.edf"
+edf_file = "app/data/raw/files/S005/S005_12s.edf"
 CHANNELS = ['Oz..', 'Iz..','Cz..'] 
 SAMPLE_RATE = 160  # EEG Sampling Rate
 TIME_WINDOW = 3    # 3 seconds per segment
@@ -12,8 +12,8 @@ STRIDE = 0.25
 raw=mne.io.read_raw_edf(edf_file, preload=True, verbose=False)
 raw.pick(CHANNELS)  
 samples_per_segment=SAMPLE_RATE*TIME_WINDOW
-start_sample = raw.n_times - samples_per_segment
-end_sample = raw.n_times
+start_sample = raw.n_times - samples_per_segment-160
+end_sample = raw.n_times-160
 random_segment=raw.get_data(start=start_sample, stop=end_sample).T
 print("Random segment shape:", random_segment.shape)
 spec = eeg_to_spectrogram(random_segment)
@@ -27,5 +27,7 @@ spec_transform_reshaped = np.expand_dims(spec_transform_reshaped, axis=0)  # Add
 print(spec_transform_reshaped.shape)
 
 prediction=model.predict(spec_transform_reshaped)
+confidence = max(prediction[0])
+print(confidence)
 predicted_class = np.argmax(prediction, axis=-1)
 print(f"Predicted class: {predicted_class}")

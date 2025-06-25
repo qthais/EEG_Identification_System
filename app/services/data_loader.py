@@ -10,7 +10,6 @@ def load_eeg_split_by_time(data_dir=DATA_DIR, channels=CHANNELS,
                            sample_rate=SAMPLE_RATE, time_window=TIME_WINDOW, stride=STRIDE):
     X_train, y_train = [], []
     X_val, y_val = [], []
-    X_test, y_test = [], []
 
     edf_files = [f for f in os.listdir(data_dir) if f.endswith(".edf")]
 
@@ -54,19 +53,15 @@ def load_eeg_split_by_time(data_dir=DATA_DIR, channels=CHANNELS,
 
             # Split into train/val/test
             total = len(segments)
-            train_end = int(0.6 * total)
-            val_end = int(0.8 * total)
+            train_end = int(0.7 * total)
+
 
             for i, spec in enumerate(segments):
                 if i < train_end:
                     X_train.append(spec)
                     y_train.append(subject_id)
-                elif i < val_end:
+                else:
                     X_val.append(spec)
                     y_val.append(subject_id)
-                else:
-                    X_test.append(spec)
-                    y_test.append(subject_id)
     return (np.array(X_train), np.array(y_train),
-            np.array(X_val), np.array(y_val),
-            np.array(X_test), np.array(y_test))
+            np.array(X_val), np.array(y_val))

@@ -1,7 +1,7 @@
 import pyedflib
 import matplotlib.pyplot as plt
 # Load EDF file
-edf_file = "files/S001/S001R13.edf"  # Replace with your file path
+edf_file = "app/data/raw/files"  # Replace with your file path
 f = pyedflib.EdfReader(edf_file)
 
 # Print general file information
