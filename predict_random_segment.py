@@ -4,7 +4,7 @@ import numpy as np
 import joblib
 from updateCnn2d import eeg_to_spectrogram
 model = tf.keras.models.load_model('app/models/best_cnn2d_model.keras')
-edf_file = "app/data/raw/files/S005/S005_12s.edf"
+edf_file = "app/data/raw/files/S006/S006_12s.edf"
 CHANNELS = ['Oz..', 'Iz..','Cz..'] 
 SAMPLE_RATE = 160  # EEG Sampling Rate
 TIME_WINDOW = 3    # 3 seconds per segment

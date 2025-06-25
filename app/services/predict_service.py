@@ -6,13 +6,9 @@ import tensorflow as tf
 from app.services.eeg_processing import eeg_to_spectrogram
 from app.services.config import CHANNELS, SAMPLE_RATE, TIME_WINDOW,MODEL_DIR
 
-# Load model once
-model = tf.keras.models.load_model(MODEL_DIR/'best_cnn2d_model.keras')
-
-# Load scaler once
-scaler = joblib.load(MODEL_DIR/'scaler.pkl')
 
 def preprocess_segment(segment):
+    scaler = joblib.load(MODEL_DIR/'scaler.pkl')
     num_channels, freq_bins, time_bins = segment.shape
     spec_flattened = segment.reshape(-1, freq_bins * time_bins)
     spec_transform = scaler.transform(spec_flattened).reshape(num_channels, freq_bins, time_bins)
@@ -21,6 +17,7 @@ def preprocess_segment(segment):
     return spec_transform_reshaped
 
 def predict_random_segment(edf_file_path):
+    model = tf.keras.models.load_model(MODEL_DIR/'best_cnn2d_model.keras')
     raw = mne.io.read_raw_edf(edf_file_path, preload=True, verbose=False)
     raw.pick(CHANNELS)
 

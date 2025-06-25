@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 import tempfile
 import os
 import mne
+import re
 import numpy as np
 from keras.models import load_model
 from app.services.eeg_processing import eeg_to_spectrogram
@@ -17,16 +18,30 @@ from app.services.retrain import retrainModel
 router= APIRouter()
 
 @router.post('/register_eeg')
-async def register_eeg(file: UploadFile, subject_id: int = Form(...)):
+async def register_eeg(file: UploadFile):
     try:
-        unique_id = uuid.uuid4().hex[:6]
+        match = re.match(r"S(\d{3})_", file.filename)
+        if not match:
+            return JSONResponse({
+                "message": "Invalid filename format. Expected something like 'S001_48s.edf'"
+            }, status_code=400)
+
+        subject_id = int(match.group(1)) - 1  # Convert to 0-based index
+        print(f"📛 Extracted subject_id: {subject_id}")
+
+        # Setup save path
         BASE_DIR = Path(__file__).resolve().parent.parent.parent
         UPLOAD_DIR = BASE_DIR / "app" / "data" / "uploads"
         UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-        filename = f"S{subject_id + 1:03d}R01_{unique_id}.edf"
+        filename = f"S{subject_id + 1:03d}R01.edf"
         filepath = UPLOAD_DIR / filename
         print(filepath)
+        if filepath.exists():
+            return JSONResponse({
+                "message": f"Duplicate file already exists: {filename}",
+                "filename": filename
+            }, status_code=409)
 
         with open(filepath, "wb") as f:
             f.write(await file.read())
@@ -36,8 +51,6 @@ async def register_eeg(file: UploadFile, subject_id: int = Form(...)):
         # Call retrain
         print("🔁 Starting retraining...")
         test_accuracy = retrainModel()
-
-
         # Return response
         return JSONResponse({
             "message": "EEG registered and model retrained successfully",
