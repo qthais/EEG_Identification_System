@@ -9,7 +9,10 @@ from keras.models import Model
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from keras.optimizers import Adam
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
+from sklearn.metrics import roc_curve
+
 # Global Parameters
 DATA_DIR = "backend/app/data/raw/files/"
 SUBJECT_PREFIX = "S"
@@ -110,6 +113,32 @@ def load_eeg_split_by_time(data_dir, subject_prefix, edf_keyword, channels,
             np.array(X_val), np.array(y_val),
             np.array(X_test), np.array(y_test))
 
+def compute_far_frr(y_true, y_pred, threshold=0.5):
+    """
+    Compute FAR and FRR assuming binary verification.
+    For multi-class ID, use one-vs-all strategy.
+    """
+    # Example: convert softmax outputs to binary acceptance
+    y_pred_binary = (y_pred >= threshold).astype(int)
+
+    tn, fp, fn, tp = confusion_matrix(y_true, y_pred_binary).ravel()
+
+    FAR = fp / (fp + tn + 1e-10)
+    FRR = fn / (fn + tp + 1e-10)
+    return FAR, FRR
+
+def compute_eer(y_true, y_scores):
+    """
+    Tính EER (Equal Error Rate).
+    EER là điểm mà FAR = FRR.
+    """
+    fpr, tpr, thresholds = roc_curve(y_true, y_scores)
+    fnr = 1 - tpr
+    # Tìm ngưỡng nơi FAR ≈ FRR
+    eer_threshold = thresholds[np.nanargmin(np.absolute((fnr - fpr)))]
+    eer = fpr[np.nanargmin(np.absolute((fnr - fpr)))]
+    return eer, eer_threshold
+
 
 # Build CNN 2D Model
 def build_cnn2d_model(input_shape, num_classes):
@@ -127,7 +156,7 @@ def build_cnn2d_model(input_shape, num_classes):
     x = MaxPooling2D(pool_size=(2,2))(x)
     x = Flatten()(x)
     x = Dense(64, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.03))(x)  # Thêm L2 regularization
-    x= Dropout(0.3)(x)
+    x = Dropout(0.3)(x)
     outputs = Dense(num_classes, activation='softmax')(x)
 
     model = Model(inputs, outputs)
