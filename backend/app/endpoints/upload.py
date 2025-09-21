@@ -80,11 +80,14 @@ async def login_eeg(file: UploadFile):
         os.remove(tmp_path)
 
         return {
+            "success": True,
             "message": "Prediction successful",
-            "confidence": result["confidence"],
-            "predicted_class": result["predicted_class"],
-            "raw_prediction": result["raw_prediction"],
-            "segment_shape": result["segment_shape"]
+            "data": {
+                "confidence": result["confidence"],
+                "predicted_class": result["predicted_class"],
+                "raw_prediction": result["raw_prediction"],
+                "segment_shape": result["segment_shape"]
+            }
         }
 
     except Exception as e:
