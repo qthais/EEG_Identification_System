@@ -1,12 +1,10 @@
 from ast import For
 from pathlib import Path
 from uuid import uuid4
-import uuid
 from fastapi import APIRouter, UploadFile, Form
 from fastapi.responses import JSONResponse
 import tempfile
 import os
-import mne
 import re
 import numpy as np
 from keras.models import load_model
@@ -50,12 +48,13 @@ async def register_eeg(file: UploadFile):
 
         # Call retrain
         print("🔁 Starting retraining...")
-        test_accuracy = retrainModel()
-        # Return response
+        # Import here to avoid circular import
+        from app.tasks import retrain_model_task
+        retrain_model_task.delay(filename)   # 👈 ENABLED: async, non-blocking
+
         return JSONResponse({
-            "message": "EEG registered and model retrained successfully",
-            "filename": filename,
-            "test_accuracy": test_accuracy
+            "message": "EEG registered. Retraining started in background",  # 👈 UPDATED: retraining message
+            "filename": filename
         })
 
     except Exception as e:

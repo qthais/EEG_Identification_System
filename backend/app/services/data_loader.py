@@ -6,7 +6,7 @@ import numpy as np
 
 from app.services.utils import extract_subject_id_from_filename
 
-def load_eeg_split_by_time(data_dir=DATA_DIR, channels=CHANNELS,
+def load_eeg_split_by_time(data_dir, channels=CHANNELS,
                            sample_rate=SAMPLE_RATE, time_window=TIME_WINDOW, stride=STRIDE):
     X_train, y_train = [], []
     X_val, y_val = [], []

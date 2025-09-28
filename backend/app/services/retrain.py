@@ -12,6 +12,8 @@ from app.services.model import build_cnn2d_model
 def retrainModel():
     X_train, y_train, X_val, y_val = load_eeg_split_by_time(UPLOAD_DIR, CHANNELS)
     n_classes = len(np.unique(np.concatenate([y_train, y_val])))
+    # print("Classes seen:", np.unique(np.concatenate([y_train, y_val])))
+    # print("n_classes:", n_classes)
     # Standardization: Fit on train, transform on both train & test
     scaler = StandardScaler()
     # Reshape data for standardization (Flatten the frequency bins & time bins)
