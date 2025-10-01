@@ -5,9 +5,10 @@ from app.services.retrain import retrainModel
 
 # Create Socket.IO client to connect to the main server
 sio = socketio.Client()
-FE_URL = os.getenv("FE_URL", "http://localhost:3000")
+SOCKET_URL = os.getenv("SOCKET_URL", "http://localhost:8000")
 @celery_app.task(name="tasks.retrain_model")
 def retrain_model_task(filename: str):
+    print('SOCKET_URL', SOCKET_URL)
     try:
         print(f"🔁 Celery: retraining for {filename}")
         print("Worker sees uploads:", os.listdir("/app/app/data/uploads"))
@@ -15,7 +16,7 @@ def retrain_model_task(filename: str):
 
         # 🔹 Emit event after retrain
         try:
-            sio.connect(FE_URL)
+            sio.connect(SOCKET_URL)
             sio.emit("retrain_complete", {
                 "filename": filename,
                 "test_accuracy": test_accuracy
@@ -29,7 +30,7 @@ def retrain_model_task(filename: str):
 
     except Exception as e:
         try:
-            sio.connect(FE_URL)
+            sio.connect(SOCKET_URL)
             sio.emit("retrain_failed", {
                 "filename": filename,
                 "error": str(e)

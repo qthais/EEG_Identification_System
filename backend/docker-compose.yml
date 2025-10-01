@@ -29,7 +29,6 @@ services:
       - rabbitmq
     volumes:
       - .:/app                # mount toàn bộ project
-      - ./app/data/uploads:/app/app/data/uploads  # share folder uploads
 
   worker:
     build:
@@ -43,7 +42,6 @@ services:
       - rabbitmq
     volumes:
       - .:/app
-      - ./app/data/uploads:/app/app/data/uploads  # share folder uploads
 
 volumes:
   rabbitmq_data:

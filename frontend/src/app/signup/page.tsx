@@ -9,34 +9,13 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import UploadModal from "../components/UploadModel";
 import axios from "axios";
-import { io, Socket } from "socket.io-client";
+import { io } from "socket.io-client";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:8000";
+export const socket = io(socketUrl, { transports: ["websocket"] });
 export default function SignUpPage() {
     const [file, setFile] = useState<File | null>(null);
     const [showModal, setShowModal] = useState(false);
-    const [socket, setSocket] = useState<Socket | null>(null);
-
-    useEffect(() => {
-        const s = io(socketUrl, { transports: ["websocket"] });
-
-        s.on("connect", () => console.log("✅ Connected to Socket.IO server"));
-        s.on("disconnect", () => console.log("❌ Disconnected"));
-
-        s.on("retrain_complete", (data) => {
-            toast.success(`🎉 Retrain done: ${data.filename}, acc: ${data.test_accuracy}`);
-        });
-
-        s.on("retrain_failed", (data) => {
-            toast.error(`❌ Retrain failed: ${data.error}`);
-        });
-
-        setSocket(s);
-            return () => {
-        s.disconnect();   // ✅ now cleanup returns void
-    };
-    }, []);
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!file) {
@@ -55,7 +34,7 @@ export default function SignUpPage() {
             });
 
             toast.success(`📥 Uploaded: ${res.data.filename}. Waiting for retrain...`);
-        } catch (err:unknown) {
+        } catch (err: unknown) {
             console.log(err)
             if (err.response) {
                 toast.error(`❌ ${err.response.data.message || "Upload failed"}`);

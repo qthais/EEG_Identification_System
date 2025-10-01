@@ -9,7 +9,9 @@ app = FastAPI()
 # Tạo Socket.IO server
 sio = socketio.AsyncServer(
     async_mode="asgi",
-    cors_allowed_origins="*"
+    cors_allowed_origins="*",
+    logger=True,        # 👈 bật log Socket.IO
+    engineio_logger=True  
 )
 
 origins = [
@@ -36,6 +38,18 @@ async def connect(sid, environ):
 @sio.event
 async def disconnect(sid):
     print(f"❌ Client disconnected: {sid}")
+
+@sio.event
+async def retrain_complete(sid, data):
+    print(f"📡 Received retrain_complete from {sid}: {data}")
+    # Forward cho tất cả client khác, trừ chính worker
+    await sio.emit("retrain_complete", data, skip_sid=sid)
+
+@sio.event
+async def retrain_failed(sid, data):
+    print(f"❌ Received retrain_failed from {sid}: {data}")
+    # Forward cho tất cả client khác, trừ chính worker
+    await sio.emit("retrain_failed", data, skip_sid=sid)
 
 # Tích hợp Socket.IO với FastAPI
 socket_app = socketio.ASGIApp(sio, app)

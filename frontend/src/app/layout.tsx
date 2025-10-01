@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "react-hot-toast";
+import ToasterProvider from "./providers/ToasterProvider";
+import SocketProvider from "./providers/SocketProvider";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -27,8 +28,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 text-gray-900`}
       >
-        {children}
-        <Toaster />
+        <SocketProvider>
+          {children}
+        </SocketProvider>
+        <ToasterProvider />
       </body>
     </html>
   );
