@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useContext, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Container from "./Container";
 import { User } from "@/types/User";
+import { SocketContext } from "../providers/SocketProvider";
+
 interface NavBarProps {
   user?: User | null;
 }
@@ -12,14 +14,30 @@ interface NavBarProps {
 
 const NavBar: React.FC<NavBarProps> = ({ user }) => {
   const [isOpen, setIsOpen] = useState(false);
-
+  const { isConnected } = useContext(SocketContext);
   return (
     <Container>
       <nav className="w-full flex items-center justify-between my-3 h-full">
         {/* Logo */}
-        <Link href={'/'} className="flex items-center space-x-2 cursor-pointer">
-          <Image src="/Logo.png" alt="NeuroID" height={40} width={150} />
-        </Link>
+        <div className="flex">
+          <Link href={'/'} className="flex items-center space-x-2 cursor-pointer">
+            <Image src="/Logo.png" alt="NeuroID" height={40} width={150} />
+          </Link>
+          <div className="hidden sm:flex items-center space-x-2 text-sm font-medium">
+            <span
+              className={`relative flex h-3 w-3`}
+            >
+              <span
+                className={`animate-ping absolute inline-flex h-full w-full rounded-full ${isConnected ? "bg-green-400" : "bg-red-400"
+                  } opacity-75`}
+              ></span>
+              <span
+                className={`relative inline-flex rounded-full h-3 w-3 ${isConnected ? "bg-green-500" : "bg-red-500"
+                  }`}
+              ></span>
+            </span>
+          </div>
+        </div>
 
         {/* Desktop Menu */}
         <div className="hidden sm:flex items-center space-x-6">

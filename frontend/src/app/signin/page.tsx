@@ -14,11 +14,13 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 export default function SignInPage() {
     const [file, setFile] = useState<File | null>(null);
     const [showModal, setShowModal] = useState(false);
-
+    const [isSignIn, setIsSignIn] = useState(false);
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setIsSignIn(true);
         if (!file) {
             toast.error("Please select an EDF file");
+            setIsSignIn(false);
             return;
         }
 
@@ -39,7 +41,9 @@ export default function SignInPage() {
             } else {
                 toast.error(`❌ ${res.data.message || "Login failed"}`);
             }
+            setIsSignIn(false);
         } catch (err: any) {
+            setIsSignIn(false);
             if (err.response) {
                 toast.error(`❌ ${err.response.data.message || "Server error"}`);
             } else {
@@ -93,8 +97,8 @@ export default function SignInPage() {
                                     </p>
                                 )}
 
-                                <Button type="submit" className="bg-pink-600 text-white w-full py-3">
-                                    Login
+                                <Button type="submit" className="bg-pink-600 text-white w-full py-3" disabled={isSignIn}>
+                                    {isSignIn ? "Logging..." : "Login"}
                                 </Button>
                             </form>
                         </div>

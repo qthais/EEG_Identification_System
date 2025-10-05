@@ -10,7 +10,7 @@ interface SocketContextType {
   transport: string;
 }
 
-const SocketContext = createContext<SocketContextType>({
+export const SocketContext = createContext<SocketContextType>({
   socket: null,
   isConnected: false,
   transport: "N/A",

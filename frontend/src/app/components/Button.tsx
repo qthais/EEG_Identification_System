@@ -6,6 +6,7 @@ interface ButtonProps {
     onClick?: () => void,
     className?: string,
     type?: "button" | "submit" | "reset";
+    disabled?: boolean;
 }
 const Button: React.FC<ButtonProps> = ({
     children,
@@ -14,6 +15,7 @@ const Button: React.FC<ButtonProps> = ({
     onClick,
     className,
     type = "button",
+    disabled = false,
 }) => {
     const baseStyle    = "px-6 py-3 rounded-full text-sm font-medium transition cursor-pointer";
     const outlineStyle = "border border-black text-black hover:bg-black hover:text-white";
@@ -24,6 +26,7 @@ const Button: React.FC<ButtonProps> = ({
             onClick={onClick}
             style={width ? {width: `${width}px`}:{}}
             className={`${baseStyle} ${outline ? outlineStyle : filledStyle} ${className}`}
+            disabled={disabled}
         >
             {children}
         </button>
