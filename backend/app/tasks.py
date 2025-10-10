@@ -1,8 +1,10 @@
+from datetime import datetime, timezone
 import os
 import socketio
+from database.models import EEGStatus
 from celery_app import celery_app
 from app.services.retrain import retrainModel
-
+from database.db import eeg_collection, prediction_collection 
 # Create Socket.IO client to connect to the main server
 sio = socketio.Client()
 SOCKET_URL = os.getenv("SOCKET_URL", "http://localhost:8000")
@@ -13,6 +15,21 @@ def retrain_model_task(filename: str):
         print(f"🔁 Celery: retraining for {filename}")
         print("Worker sees uploads:", os.listdir("/app/app/data/uploads"))
         test_accuracy = retrainModel()
+
+        try:
+            print("Try updating db")
+            eeg_collection.update_one(
+                {"filename": filename},
+                {
+                    "$set": {
+                        "status": EEGStatus.RETRAIN_COMPLETED,
+                        "retrain_finished_at": datetime.now(timezone.utc)
+                    }
+                },
+                upsert=False,
+            )
+        except Exception as e:
+            print("⚠️ Could not update retrain result in DB:", e)
 
         # 🔹 Emit event after retrain
         try:
@@ -36,6 +53,17 @@ def retrain_model_task(filename: str):
                 "error": str(e)
             })
             sio.disconnect()
+            eeg_collection.update_one(
+                {"filename": filename},
+                {
+                    "$set": {
+                        "status": EEGStatus.RETRAIN_FAILED,
+                        "retrain_finished_at": datetime.utcnow(),
+                        "notes": str(e)
+                    }
+                },
+                upsert=False,
+            )
         except Exception as conn_error:
             print(f"❌ Socket.IO connection error: {conn_error}")
 

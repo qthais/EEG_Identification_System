@@ -27,7 +27,7 @@ export default function SignUpPage() {
         formData.append("file", file);
 
         try {
-            const res = await axios.post(`${apiUrl}/register_eeg`, formData, {
+            const res = await axios.post(`${apiUrl}/api/register_eeg`, formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
                 },

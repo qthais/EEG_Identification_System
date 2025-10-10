@@ -1,24 +1,25 @@
-from ast import For
+from ast import Dict, For
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 from uuid import uuid4
 from fastapi import APIRouter, UploadFile, Form
 from fastapi.responses import JSONResponse
 import tempfile
 import os
 import re
-import numpy as np
-from keras.models import load_model
-from app.services.eeg_processing import eeg_to_spectrogram
 import tempfile
 
 from app.services.predict_service import predict_random_segment
 from app.services.retrain import retrainModel
+from app.Utils.time import add_timestamps
+from database.models import EEGRecordCreate, EEGStatus, PredictionCreate, PredictionStatus
+from database.db import eeg_collection, prediction_collection 
 router= APIRouter()
-
 @router.post('/register_eeg')
 async def register_eeg(file: UploadFile):
     try:
-        match = re.match(r"S(\d{3})_", file.filename)
+        match = re.match(r"^S(\d{3})_48s\.edf$", file.filename)
         if not match:
             return JSONResponse({
                 "message": "Invalid filename format. Expected something like 'S001_48s.edf'"
@@ -48,8 +49,23 @@ async def register_eeg(file: UploadFile):
 
         # Call retrain
         print("🔁 Starting retraining...")
+        eeg_create = EEGRecordCreate(filename=filename, subject_id=subject_id, path=str(filepath))
+        eeg_doc:dict[str, Any] = add_timestamps(eeg_create.model_dump(exclude_none=True))
+        insert_res = await eeg_collection.insert_one(eeg_doc)
+        inserted_id = insert_res.inserted_id
+
         # Import here to avoid circular import
         from app.tasks import retrain_model_task
+        retrain_started_at = datetime.now(timezone.utc)
+        await eeg_collection.update_one(
+            {"_id": inserted_id},
+            {
+                "$set": {
+                    "status": EEGStatus.RETRAINING_STARTED.value,
+                    "retrain_started_at": retrain_started_at,
+                }
+            },
+        )
         retrain_model_task.delay(filename)   # 👈 ENABLED: async, non-blocking
 
         return JSONResponse({
@@ -59,6 +75,17 @@ async def register_eeg(file: UploadFile):
 
     except Exception as e:
         print("❌ Error in /register_eeg:", e)
+
+        await eeg_collection.update_one(
+            {"_id": inserted_id},
+            {
+                "$set":{
+                    "status": EEGStatus.RETRAIN_FAILED_TO_START,
+                    "notes": str(e)
+                }
+            }
+        )
+
         return JSONResponse({
             "message": "Error during registration or retraining",
             "error": str(e)
@@ -75,7 +102,16 @@ async def login_eeg(file: UploadFile):
         print(f"📥 Temp file saved: {tmp_path}")
 
         result = predict_random_segment(tmp_path)
-
+        pred_create = PredictionCreate(
+            filename=file.filename,
+            predicted_class=result.get("predicted_class", ""),
+            confidence=float(result.get("confidence", 0.0)),
+            raw_prediction=result.get("raw_prediction"),
+            segment_shape=result.get("segment_shape"),
+            status=PredictionStatus.COMPLETED,  # optional override
+        )
+        pred_doc = add_timestamps(pred_create.model_dump(exclude_none=True))
+        pred_res = await prediction_collection.insert_one(pred_doc)
         os.remove(tmp_path)
 
         return {
@@ -91,6 +127,15 @@ async def login_eeg(file: UploadFile):
 
     except Exception as e:
         print("❌ Error in /login_eeg:", e)
+        fail_doc = {
+            "filename": file.filename if file and hasattr(file, "filename") else "unknown",
+            "predicted_class": "",
+            "confidence": 0.0,
+            "raw_prediction": {"error": str(e)},
+            "timestamp": datetime.now(timezone.utc),
+            "status": PredictionStatus.FAILED.value,
+        }
+        await prediction_collection.insert_one(fail_doc)
         return JSONResponse({
             "message": "Prediction failed",
             "error": str(e)

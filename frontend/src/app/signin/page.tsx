@@ -28,7 +28,7 @@ export default function SignInPage() {
         formData.append("file", file); // ✅ backend yêu cầu key = file
 
         try {
-            const res = await axios.post(`${apiUrl}/login_eeg`, formData, {
+            const res = await axios.post(`${apiUrl}/api/login_eeg`, formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
 

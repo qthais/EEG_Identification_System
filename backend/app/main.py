@@ -1,7 +1,7 @@
 import socketio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.endpoints import upload
+from app.endpoints import upload, users
 
 # Tạo FastAPI app
 app = FastAPI()
@@ -27,8 +27,9 @@ app.add_middleware(
     allow_headers=["*"],              # Cho phép tất cả headers (Content-Type, Authorization, ...)
 )
 
-# Include router
-app.include_router(upload.router)
+# Include routers
+app.include_router(upload.router, prefix="/api", tags=["EEG"])
+app.include_router(users.router, prefix="/api", tags=["Users"])
 
 # Socket.IO event handlers
 @sio.event
