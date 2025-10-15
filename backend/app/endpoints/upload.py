@@ -13,6 +13,7 @@ import tempfile
 from app.services.predict_service import predict_random_segment
 from app.services.retrain import retrainModel
 from app.Utils.time import add_timestamps
+from app.auth.token_utils import create_access_token
 from database.models import EEGRecordCreate, EEGStatus, PredictionCreate, PredictionStatus
 from database.db import eeg_collection, prediction_collection 
 router= APIRouter()
@@ -67,7 +68,6 @@ async def register_eeg(file: UploadFile):
             },
         )
         retrain_model_task.delay(filename)   # 👈 ENABLED: async, non-blocking
-
         return JSONResponse({
             "message": "EEG registered. Retraining started in background",  # 👈 UPDATED: retraining message
             "filename": filename
@@ -114,6 +114,8 @@ async def login_eeg(file: UploadFile):
         pred_res = await prediction_collection.insert_one(pred_doc)
         os.remove(tmp_path)
 
+        token = create_access_token(sub=file.filename)
+
         return {
             "success": True,
             "message": "Prediction successful",
@@ -121,7 +123,8 @@ async def login_eeg(file: UploadFile):
                 "confidence": result["confidence"],
                 "predicted_class": result["predicted_class"],
                 "raw_prediction": result["raw_prediction"],
-                "segment_shape": result["segment_shape"]
+                "segment_shape": result["segment_shape"],
+                "access_token": token
             }
         }
 

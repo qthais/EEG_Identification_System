@@ -5,17 +5,39 @@ import Button from "../components/Button";
 import NavBar from "../components/NavBar";
 import Footer from "../components/Footer";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import UploadModal from "../components/UploadModel";
 import axios from "axios";
 import { io } from "socket.io-client";
+import { SocketContext } from "../providers/SocketProvider";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:8000";
 export const socket = io(socketUrl, { transports: ["websocket"] });
 export default function SignUpPage() {
+    const { latestRetrainEvent } = useContext(SocketContext);
     const [file, setFile] = useState<File | null>(null);
     const [showModal, setShowModal] = useState(false);
+    const [status, setStatus] = useState<"idle" | "training" | "done" | "failed">("idle");
+    const [progress, setProgress] = useState(0);
+    const [savedFilename, setSavedFilename] = useState<string | null>(null);
+    const [progressTimer, setProgressTimer] = useState<NodeJS.Timeout | null>(null);
+    useEffect(() => {
+        console.log("🔥 latestRetrainEvent", latestRetrainEvent, "savedFilename", savedFilename);
+        if (!latestRetrainEvent) return;
+        if (
+            savedFilename &&
+            latestRetrainEvent.filename.replace(/R\d+\.edf$/, "") === savedFilename.replace(/_48s\.edf$/, "")
+        ) {
+            if (latestRetrainEvent.status === "complete") {
+                setStatus("done");
+                setProgress(100);
+            } else if (latestRetrainEvent.status === "failed") {
+                setStatus("failed");
+                setProgress(0);
+            }
+        }
+    }, [latestRetrainEvent, savedFilename]);
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!file) {
@@ -32,6 +54,21 @@ export default function SignUpPage() {
                     "Content-Type": "multipart/form-data",
                 },
             });
+            setSavedFilename(file.name);
+            setStatus("training");
+            setProgress(5);
+            let current = 5;
+            const totalDuration = 100; // seconds (4 minutes)
+            const tick = 1000; // update every second
+            const increment = 95 / totalDuration; // go from 5 → 100 (keep 95 max until real complete)
+
+            const timer = setInterval(() => {
+            current += increment;
+            if (current >= 95) current = 95; // cap until retrain_complete
+            setProgress(current);
+            }, tick);
+
+            setProgressTimer(timer);
 
             toast.success(`📥 Uploaded: ${res.data.filename}. Waiting for retrain...`);
         } catch (err: unknown) {
@@ -95,6 +132,34 @@ export default function SignUpPage() {
                                     Submit
                                 </Button>
                             </form>
+                            {/* Progress visualization */}
+                            {status !== "idle" && (
+                                <div className="mt-4">
+                                    {status === "training" && (
+                                        <>
+                                            <div className="text-pink-600 text-sm mb-1">
+                                                Training in progress...
+                                            </div>
+                                            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                                                <div
+                                                    className="h-3 bg-pink-500 transition-all duration-500"
+                                                    style={{ width: `${progress}%` }}
+                                                />
+                                            </div>
+                                        </>
+                                    )}
+                                    {status === "done" && (
+                                        <div className="text-green-600 font-medium mt-2">
+                                            🎉 Training Complete, try signing in!
+                                        </div>
+                                    )}
+                                    {status === "failed" && (
+                                        <div className="text-red-500 font-medium mt-2">
+                                            ❌ Training Failed
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
