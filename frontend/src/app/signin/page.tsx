@@ -37,16 +37,16 @@ export default function SignInPage() {
 
             if (res.data.success) {
                 const token = res.data.data.access_token;
-                toast.success(
-                    `✅ Login OK! User class: ${res.data.data.predicted_class} (conf: ${(
-                        res.data.data.confidence * 100
-                    ).toFixed(2)}%)`
-                );
                 const result = await signIn("credentials", {
                     redirect: false,
                     accessToken: token,
                     callbackUrl: "/dashboard",
                 });
+                toast.success(
+                    `✅ Login OK! User class: ${res.data.data.predicted_class} (conf: ${(
+                        res.data.data.confidence * 100
+                    ).toFixed(2)}%)`
+                );
 
                 if (result?.ok && !result.error) {
                     router.push(result.url || "/dashboard");

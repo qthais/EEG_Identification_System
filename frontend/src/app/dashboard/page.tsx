@@ -1,12 +1,17 @@
-"use client";
-
 import { User } from "@/types/User";
 import EEGChart from "../components/Chart";
 import NavBar from "../components/NavBar";
 import { ProfileCard } from "../components/ProfileCard";
+import { authOptions } from "../api/auth/[...nextauth]/route";
+import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
 
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+        redirect("/signin"); // 🔒 redirect if not logged in
+    }
     const user:User={
         name: "Thai",
         email:"thai@gmail.com"

@@ -6,6 +6,7 @@ import Link from "next/link";
 import Container from "./Container";
 import { User } from "@/types/User";
 import { SocketContext } from "../providers/SocketProvider";
+import { signOut } from "next-auth/react";
 
 interface NavBarProps {
   user?: User | null;
@@ -52,8 +53,8 @@ const NavBar: React.FC<NavBarProps> = ({ user }) => {
           </Link>
           {user ? (
             <button
-              onClick={() => alert("Sign out logic here")}
-              className="ml-2 px-4 py-2 bg-black text-white text-sm font-semibold rounded-full hover:bg-pink-700"
+              onClick={() => signOut({callbackUrl:'/signin'})}
+              className="ml-2 px-4 py-2 bg-black text-white text-sm font-semibold rounded-full hover:bg-pink-700 cursor-pointer"
             >
               Sign Out
             </button>

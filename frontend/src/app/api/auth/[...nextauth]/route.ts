@@ -1,10 +1,7 @@
-import NextAuth from "next-auth";
+import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import axios from "axios";
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
-
-const handler = NextAuth({
+export const authOptions:NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "EEG Login",
@@ -41,6 +38,7 @@ const handler = NextAuth({
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
-});
+};
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
