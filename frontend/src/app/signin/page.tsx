@@ -9,12 +9,15 @@ import { useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import UploadModal from "../components/UploadModel";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function SignInPage() {
     const [file, setFile] = useState<File | null>(null);
     const [showModal, setShowModal] = useState(false);
     const [isSignIn, setIsSignIn] = useState(false);
+    const router = useRouter();
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSignIn(true);
@@ -33,11 +36,23 @@ export default function SignInPage() {
             });
 
             if (res.data.success) {
+                const token = res.data.data.access_token;
                 toast.success(
                     `✅ Login OK! User class: ${res.data.data.predicted_class} (conf: ${(
                         res.data.data.confidence * 100
                     ).toFixed(2)}%)`
                 );
+                const result = await signIn("credentials", {
+                    redirect: false,
+                    accessToken: token,
+                    callbackUrl: "/dashboard",
+                });
+
+                if (result?.ok && !result.error) {
+                    router.push(result.url || "/dashboard");
+                } else {
+                    toast.error(`❌ NextAuth login failed`);
+                }
             } else {
                 toast.error(`❌ ${res.data.message || "Login failed"}`);
             }

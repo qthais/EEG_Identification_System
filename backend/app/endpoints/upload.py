@@ -93,6 +93,11 @@ async def register_eeg(file: UploadFile):
 @router.post("/login_eeg")
 async def login_eeg(file: UploadFile):
     try:
+        match = re.match(r"^S(\d{3})_12s\.edf$", file.filename)
+        if not match:
+            return JSONResponse({
+                "message": "Invalid filename format. Expected something like 'S001_12s.edf'"
+            }, status_code=400)
         print(f"LOGIN EEG: received file {file.filename}")
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=".edf") as tmp_file:
