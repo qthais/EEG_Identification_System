@@ -38,5 +38,6 @@ def predict_random_segment(edf_file_path):
         "confidence": confidence,
         "predicted_class": int(predicted_class),
         "raw_prediction": prediction.tolist(),
-        "segment_shape": random_segment.shape
+        "segment_shape": random_segment.shape,
+        "raw_data": random_segment.tolist()
     }

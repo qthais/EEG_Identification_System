@@ -129,6 +129,7 @@ async def login_eeg(file: UploadFile):
                 "predicted_class": result["predicted_class"],
                 "raw_prediction": result["raw_prediction"],
                 "segment_shape": result["segment_shape"],
+                "raw_data": result["raw_data"] ,
                 "access_token": token
             }
         }

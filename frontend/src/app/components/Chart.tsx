@@ -11,28 +11,53 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const data = [
-  { x: 0, oz: -500, iz: -700 },
-  { x: 0.5, oz: 1000, iz: -200 },
-  { x: 1, oz: 800, iz: 0 },
-  { x: 1.5, oz: 400, iz: -300 },
-  { x: 2, oz: 600, iz: -400 },
-  { x: 2.5, oz: 300, iz: -200 },
-  { x: 3, oz: 900, iz: 100 },
-];
+interface EEGChartProps {
+  rawData: number[][];        // from API: [[ch1, ch2, ch3], ...]
+  channelNames?: string[];    // optional: e.g. ["OZ", "IZ", "PZ"]
+}
 
-export default function EEGChart() {
+export default function EEGChart({ rawData, channelNames }: EEGChartProps) {
+  if (!rawData || rawData.length === 0) {
+    return <p className="text-gray-400 italic">No EEG data available</p>;
+  }
+
+  // Dynamically convert rawData into Recharts-friendly array
+  const data = rawData.map((sample, i) => {
+    const point: any = { x: i }; // sample index
+    sample.forEach((val, chIndex) => {
+      const key = channelNames?.[chIndex] || `Ch${chIndex + 1}`;
+      point[key] = val;
+    });
+    return point;
+  });
+
+  // Auto-generate colors for each channel
+  const colors = ["#facc15", "#818cf8", "#34d399", "#f87171", "#a855f7"];
+
   return (
-    <ResponsiveContainer width="100%" height={300}>
-      <LineChart data={data}>
-        <CartesianGrid stroke="#e5e7eb" />
-        <XAxis dataKey="x" />
-        <YAxis />
-        <Tooltip />
-        <Legend />
-        <Line type="monotone" dataKey="oz" stroke="#facc15" strokeWidth={2} />
-        <Line type="monotone" dataKey="iz" stroke="#818cf8" strokeWidth={2} />
-      </LineChart>
-    </ResponsiveContainer>
+    <div className="w-full h-[350px] p-4 bg-white rounded-2xl shadow">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data}>
+          <CartesianGrid stroke="#e5e7eb" strokeDasharray="3 3" />
+          <XAxis dataKey="x" label={{ value: "Time (samples)", position: "insideBottom", offset: -5 }} />
+          <YAxis label={{ value: "Amplitude", angle: -90, position: "insideLeft" }} />
+          <Tooltip />
+          <Legend />
+
+          {Object.keys(data[0])
+            .filter((k) => k !== "x")
+            .map((key, i) => (
+              <Line
+                key={key}
+                type="monotone"
+                dataKey={key}
+                stroke={colors[i % colors.length]}
+                strokeWidth={2}
+                dot={false}
+              />
+            ))}
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
