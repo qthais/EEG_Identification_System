@@ -1,7 +1,7 @@
 import socketio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.endpoints import upload, users
+from app.endpoints import upload, users, predict
 
 # Tạo FastAPI app
 app = FastAPI()
@@ -30,6 +30,7 @@ app.add_middleware(
 # Include routers
 app.include_router(upload.router, prefix="/api", tags=["EEG"])
 app.include_router(users.router, prefix="/api", tags=["Users"])
+app.include_router(predict.router, prefix="/api",tags=["Predictions"])
 
 # Socket.IO event handlers
 @sio.event

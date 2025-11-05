@@ -7,6 +7,7 @@ export const authOptions:NextAuthOptions = {
       name: "EEG Login",
       credentials: {
         accessToken: { label: "EEG Token", type: "text" },
+        userId: { label: "User ID", type: "text" },
       },
       async authorize(credentials) {
         if (!credentials?.accessToken) {
@@ -16,7 +17,7 @@ export const authOptions:NextAuthOptions = {
 
         // ✅ giả lập user từ token
         return {
-          id: "EEG_USER",
+          id: credentials.userId || "EEG_USER",
           accessToken: credentials.accessToken,
         };
       },

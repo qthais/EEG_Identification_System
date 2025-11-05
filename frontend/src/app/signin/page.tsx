@@ -36,15 +36,14 @@ export default function SignInPage() {
             });
 
             if (res.data.success) {
-                const { raw_data, confidence, predicted_class } = res.data.data;
                 // ✅ Store to localStorage
-                localStorage.setItem("eeg_raw_data", JSON.stringify(raw_data));
-                localStorage.setItem("eeg_confidence", confidence.toString());
-                localStorage.setItem("eeg_class", predicted_class.toString());
                 const token = res.data.data.access_token;
+                const userId= res.data.data.user_id
+                localStorage.setItem("neuroID_token", token);
                 const result = await signIn("credentials", {
                     redirect: false,
                     accessToken: token,
+                    userId:userId,
                     callbackUrl: "/dashboard",
                 });
                 toast.success(

@@ -14,15 +14,20 @@ import {
 interface EEGChartProps {
   rawData: number[][];        // from API: [[ch1, ch2, ch3], ...]
   channelNames?: string[];    // optional: e.g. ["OZ", "IZ", "PZ"]
+  maxPoints?: number;    
 }
 
-export default function EEGChart({ rawData, channelNames }: EEGChartProps) {
+export default function EEGChart({ rawData, channelNames, maxPoints=240 }: EEGChartProps) {
   if (!rawData || rawData.length === 0) {
     return <p className="text-gray-400 italic">No EEG data available</p>;
   }
+    const limitedData =
+    rawData.length > maxPoints
+      ? rawData.slice(-maxPoints)
+      : rawData;
 
   // Dynamically convert rawData into Recharts-friendly array
-  const data = rawData.map((sample, i) => {
+  const data = limitedData.map((sample, i) => {
     const point: any = { x: i }; // sample index
     sample.forEach((val, chIndex) => {
       const key = channelNames?.[chIndex] || `Ch${chIndex + 1}`;

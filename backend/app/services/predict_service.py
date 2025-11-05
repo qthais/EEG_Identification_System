@@ -29,7 +29,8 @@ def predict_random_segment(edf_file_path):
     random_segment = raw.get_data(start=start_sample, stop=end_sample).T
     spec = eeg_to_spectrogram(random_segment)
     input_tensor = preprocess_segment(spec)
-
+    half_second_samples = int(SAMPLE_RATE * 1.5)
+    raw_data_last_1p5s = random_segment[-half_second_samples:]
     prediction = model.predict(input_tensor)
     confidence = float(max(prediction[0]))
     predicted_class = np.argmax(prediction, axis=-1)[0]
@@ -39,5 +40,5 @@ def predict_random_segment(edf_file_path):
         "predicted_class": int(predicted_class),
         "raw_prediction": prediction.tolist(),
         "segment_shape": random_segment.shape,
-        "raw_data": random_segment.tolist()
+        "raw_data": raw_data_last_1p5s.tolist()
     }

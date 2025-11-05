@@ -133,6 +133,7 @@ async def login_eeg(file: UploadFile):
 
         # Extract name and ID separately
         user_id = header_info.get("his_id") or None
+        user_name = header_info.get("last_name") or header_info.get("first_name") or None
         existing_user = await user_collection.find_one({"user_id": user_id})
         if not existing_user:
             print(f"❌ User not found in DB for user_id={user_id}")
@@ -157,7 +158,7 @@ async def login_eeg(file: UploadFile):
         pred_res = await prediction_collection.insert_one(pred_doc)
         os.remove(tmp_path)
 
-        token = create_access_token(sub=file.filename)
+        token = create_access_token(user_id=user_id, user_name=user_name)
 
         return {
             "success": True,
@@ -166,9 +167,8 @@ async def login_eeg(file: UploadFile):
                 "confidence": result["confidence"],
                 "predicted_class": result["predicted_class"],
                 "raw_prediction": result["raw_prediction"],
-                "segment_shape": result["segment_shape"],
-                "raw_data": result["raw_data"] ,
-                "access_token": token
+                "access_token": token,
+                "user_id": user_id,
             }
         }
 
