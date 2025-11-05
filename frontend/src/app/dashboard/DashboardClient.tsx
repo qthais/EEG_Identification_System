@@ -12,7 +12,10 @@ export default function EEGDashboardClient() {
     const conf = localStorage.getItem("eeg_confidence");
     const clazz = localStorage.getItem("eeg_class");
 
-    if (savedData) setRawData(JSON.parse(savedData));
+    if (savedData){
+      setRawData(JSON.parse(savedData));
+      console.log(savedData.length)
+    } 
     if (conf) setConfidence(parseFloat(conf));
     if (clazz) setPredictedClass(parseInt(clazz));
   }, []);

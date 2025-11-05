@@ -9,13 +9,14 @@ import tempfile
 import os
 import re
 import tempfile
+import mne
 
 from app.services.predict_service import predict_random_segment
 from app.services.retrain import retrainModel
 from app.Utils.time import add_timestamps
 from app.auth.token_utils import create_access_token
-from database.models import EEGRecordCreate, EEGStatus, PredictionCreate, PredictionStatus
-from database.db import eeg_collection, prediction_collection 
+from database.models import EEGRecordCreate, EEGStatus, PredictionCreate, PredictionStatus, UserCreate
+from database.db import eeg_collection, prediction_collection, user_collection
 router= APIRouter()
 @router.post('/register_eeg')
 async def register_eeg(file: UploadFile):
@@ -47,10 +48,30 @@ async def register_eeg(file: UploadFile):
             f.write(await file.read())
 
         print(f"✅ Saved EEG file to {filepath}")
+        raw = mne.io.read_raw_edf(filepath, preload=False, verbose=False)
+        header_info = raw.info.get("subject_info", {})
 
+        # Extract name and ID separately
+        user_id = header_info.get("his_id") or None
+        user_name = header_info.get("last_name") or header_info.get("first_name") or None
+        existing_user = await user_collection.find_one({"user_id": user_id})
+        if not existing_user:
+            user_create = UserCreate(
+                user_id=user_id,
+                user_name=user_name,
+            )
+            user_doc:dict[str,Any] = add_timestamps(user_create.model_dump(exclude_none=True))
+            user_collection.insert_one(user_doc)
+        else:
+            print(f"👤 User already exists: {existing_user['user_name']} ({user_id})")
         # Call retrain
         print("🔁 Starting retraining...")
-        eeg_create = EEGRecordCreate(filename=filename, subject_id=subject_id, path=str(filepath))
+        eeg_create = EEGRecordCreate(
+            filename=filename, 
+            subject_id=subject_id, 
+            user_id=user_id,
+            path=str(filepath)
+            )
         eeg_doc:dict[str, Any] = add_timestamps(eeg_create.model_dump(exclude_none=True))
         insert_res = await eeg_collection.insert_one(eeg_doc)
         inserted_id = insert_res.inserted_id
@@ -70,7 +91,9 @@ async def register_eeg(file: UploadFile):
         retrain_model_task.delay(filename)   # 👈 ENABLED: async, non-blocking
         return JSONResponse({
             "message": "EEG registered. Retraining started in background",  # 👈 UPDATED: retraining message
-            "filename": filename
+            "filename": filename,
+            "user_id": user_id,
+            "user_name": user_name,
         })
 
     except Exception as e:
@@ -105,12 +128,27 @@ async def login_eeg(file: UploadFile):
             tmp_path = tmp_file.name
 
         print(f"📥 Temp file saved: {tmp_path}")
+        raw = mne.io.read_raw_edf(tmp_path, preload=False, verbose=False)
+        header_info = raw.info.get("subject_info", {})
 
+        # Extract name and ID separately
+        user_id = header_info.get("his_id") or None
+        existing_user = await user_collection.find_one({"user_id": user_id})
+        if not existing_user:
+            print(f"❌ User not found in DB for user_id={user_id}")
+            os.remove(tmp_path)
+            return JSONResponse({
+                "success": False,
+                "message": f"User not found for EDF subject ({user_id or 'unknown'})",
+                "user_id": user_id,
+            }, status_code=404)
         result = predict_random_segment(tmp_path)
         pred_create = PredictionCreate(
+            user_id=user_id,
             filename=file.filename,
             predicted_class=result.get("predicted_class", ""),
             confidence=float(result.get("confidence", 0.0)),
+            raw_data=result.get("raw_data"),
             raw_prediction=result.get("raw_prediction"),
             segment_shape=result.get("segment_shape"),
             status=PredictionStatus.COMPLETED,  # optional override

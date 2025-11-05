@@ -9,6 +9,16 @@ edf_file = "backend/app/data/raw/files/S001/S001_12s.edf"
 print("edf file:",edf_file)
 raw = mne.io.read_raw_edf(edf_file, preload=True)
 print("Channel Labels:", raw.info)
+# Extract patient info from EDF header
+subject_info = raw.info.get("subject_info", {})
+
+# Get fields safely (some EDFs may not have them)
+patient_name = subject_info.get("first_name") or subject_info.get("last_name") or "Unknown"
+patient_code = subject_info.get("his_id") or "Unknown"
+
+print(subject_info)
+# print(f"🧠 Patient Name: {patient_name}")
+# print(f"🧩 Patient Code: {patient_code}")
 
 # Pick a channel (using the new API: inst.pick(...))
 raw.pick(["Oz.."])

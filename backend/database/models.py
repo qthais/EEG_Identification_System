@@ -40,21 +40,13 @@ class BaseMongoModel(BaseModel):
 
 # --- User models (no is_active, minimal fields) ----------------------------
 class User(BaseMongoModel):
-    username: str = Field(..., min_length=3, max_length=50)
-    email: EmailStr = Field(...)
-    password: str = Field(..., min_length=6)
-    full_name: Optional[str] = Field(default=None, max_length=100)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-    # store EEG filenames (or IDs) related to this user
-    eeg_files: List[str] = Field(default_factory=list)
+    user_id: str = Field(..., description="User unique code (from EDF header, e.g. patientcode)", unique=True)
+    user_name: str = Field(..., description="User display name (from EDF header, e.g. patientname)")
 
 
 class UserCreate(BaseModel):
-    username: str = Field(..., min_length=3, max_length=50)
-    email: EmailStr = Field(...)
-    password: str = Field(..., min_length=6)
-    full_name: Optional[str] = Field(default=None, max_length=100)
+    user_id: str = Field(..., description="User unique code (from EDF header, e.g. patientcode)", unique=True)
+    user_name: str = Field(..., description="User display name (from EDF header, e.g. patientname)")
 
 
 class UserUpdate(BaseModel):
@@ -76,6 +68,7 @@ class UserResponse(BaseMongoModel):
 class EEGRecordBase(BaseMongoModel):
     filename: str
     subject_id: int
+    user_id: Optional[str] = Field(default=None, description="User unique code (from EDF header)")
     path: Optional[str] = None
     uploaded_at: datetime = Field(default_factory=datetime.utcnow)
     status: EEGStatus = Field(default=EEGStatus.PENDING_RETRAIN)
@@ -87,6 +80,7 @@ class EEGRecordBase(BaseMongoModel):
 class EEGRecordCreate(BaseModel):
     filename: str
     subject_id: int
+    user_id: Optional[str] = Field(default=None, description="User unique code (from EDF header)")
     path: Optional[str] = None
     notes: Optional[str] = None
     status: Optional[EEGStatus] = None  # optional override on create
@@ -102,15 +96,19 @@ class PredictionBase(BaseMongoModel):
     predicted_class: str
     confidence: float
     raw_prediction: Any
+    raw_data: Optional[Any] = Field(default=None, description="EEG raw data used for prediction")
+    user_id: Optional[str] = Field(default=None, description="User unique code (from EDF header)")
     segment_shape: Optional[List[int]] = None
     status: PredictionStatus = Field(default=PredictionStatus.COMPLETED)
 
 
 class PredictionCreate(BaseModel):
+    user_id: Optional[str] = Field(default=None, description="User unique code (from EDF header)")
     filename: str
     predicted_class: int
     confidence: float
     raw_prediction: Any
+    raw_data: Optional[Any] = Field(default=None, description="EEG raw data used for prediction")
     segment_shape: Optional[List[int]] = None
     status: Optional[PredictionStatus] = None  # optional override on create
 
