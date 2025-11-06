@@ -11,43 +11,39 @@ async def get_predictions_by_user(Authorization: str = Header(None)):
     """
     Return all prediction records associated with a given user_id.
     """
-    try:
-        if not Authorization or not Authorization.startswith("Bearer "):
-            raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    if not Authorization or not Authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
 
-        token = Authorization.split(" ")[1]
+    token = Authorization.split(" ")[1]
 
-        # ✅ Decode token using your existing helper
-        payload = decode_token(token)
-        if not payload:
-            raise HTTPException(status_code=401, detail="Invalid or expired token")
+    # ✅ Decode token using your existing helper
+    payload = decode_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
 
-        user_id = payload.get("sub")
-        user_name = payload.get("name")
+    user_id = payload.get("sub")
+    user_name = payload.get("name")
 
-        if not user_id:
-            raise HTTPException(status_code=401, detail="Token missing user_id")
-        cursor = prediction_collection.find({"user_id": user_id})
-        predictions = await cursor.to_list(length=None)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Token missing user_id")
+    cursor = prediction_collection.find({"user_id": user_id})
+    predictions = await cursor.to_list(length=None)
 
-        if not predictions:
-            return JSONResponse(
-                {"success": False, "message": f"No predictions found for user_id '{user_id}'"},
-                status_code=404
-            )
+    if not predictions:
+        return JSONResponse(
+            {"success": False, "message": f"No predictions found for user_id '{user_id}'"},
+            status_code=404
+        )
 
 
-        for p in predictions:
-            p.pop("_id", None)
+    for p in predictions:
+        p.pop("_id", None)
 
-        return jsonable_encoder({
-            "success": True,
-            "count": len(predictions),
-            "user_id": user_id,
-            "user_name": user_name,
-            "predictions": predictions
-        })
+    return jsonable_encoder({
+        "success": True,
+        "count": len(predictions),
+        "user_id": user_id,
+        "user_name": user_name,
+        "predictions": predictions
+    })
 
-    except Exception as e:
-        print(f"❌ Error fetching predictions for {user_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")

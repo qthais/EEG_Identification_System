@@ -5,8 +5,8 @@ import { authOptions } from "../api/auth/[...nextauth]/route";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import ClientOnly from "../components/ClientOnly";
-import EEGDashboardClient from "./DashboardClient";
 import axios from "axios";
+import EEGHistoryViewer, { Prediction } from "../components/EEGHistoryView";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 export default async function DashboardPage() {
@@ -20,9 +20,10 @@ export default async function DashboardPage() {
   };
   const token = session.accessToken;
 
-  let rawData: number[][] = [];
-  let confidence: number | null = null;
-  let predictedClass: number | null = null;
+  // let rawData: number[][] = [];
+  // let confidence: number | null = null;
+  // let predictedClass: number | null = null;
+  let predictions:Prediction[]=[];
   try {
     const res = await axios.get(`${apiUrl}/api/predictions`, {
       headers: {
@@ -33,10 +34,10 @@ export default async function DashboardPage() {
 
     if (res.status === 200 && res.data?.predictions?.length > 0) {
       // Pick the latest prediction
-      const latest = res.data.predictions[res.data.predictions.length - 1];
-      rawData = latest.raw_data || [];
-      confidence = latest.confidence ?? null;
-      predictedClass = latest.predicted_class ?? null;
+      predictions = res.data.predictions;
+      // rawData = latest.raw_data || [];
+      // confidence = latest.confidence ?? null;
+      // predictedClass = latest.predicted_class ?? null;
     } else {
       console.warn("No predictions found or API returned non-200");
     }
@@ -56,11 +57,7 @@ export default async function DashboardPage() {
 
           {/* 👇 Bọc phần client bằng ClientOnly */}
           <ClientOnly>
-            <EEGDashboardClient
-              rawData={rawData}
-              confidence={confidence}
-              predictedClass={predictedClass}
-            />
+            <EEGHistoryViewer predictions={predictions || []} />
           </ClientOnly>
         </div>
       </main>
